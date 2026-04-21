@@ -146,8 +146,7 @@ Exact replica of the bash_tool built into Claude.
 
 Parameters:
   - command     (string, required) : The shell command to run.
-                                     Uses bash on Linux/macOS; PowerShell Core
-                                     (pwsh) or cmd.exe on Windows.
+                                     ${IS_WINDOWS ? "Uses PowerShell Core (pwsh) if available, otherwise falls back to cmd.exe." : "Uses bash if available, otherwise falls back to /bin/sh."}
   - description (string, required) : Plain-English reason for running the command
                                      (used for logging/auditing, not executed).
 
