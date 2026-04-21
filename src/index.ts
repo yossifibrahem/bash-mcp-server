@@ -10,7 +10,7 @@
  *
  *   Output     : { "returncode": number, "stdout": string, "stderr": string }
  *
- * Works on Linux, macOS, and Windows.
+ * Works on Linux and macOS.
  */
 
 import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
@@ -21,20 +21,15 @@ import * as path from "path";
 import * as fs from "fs";
 import { z } from "zod";
 
-// ─── Platform helpers ─────────────────────────────────────────────────────────
-
-const IS_WINDOWS = os.platform() === "win32";
+// ─── Shell resolver ───────────────────────────────────────────────────────────
 
 /** Locate a binary by searching PATH — avoids a shell round-trip. */
 function findOnPath(candidates: string[]): string | null {
   const dirs = (process.env.PATH ?? "").split(path.delimiter);
-  const exts  = IS_WINDOWS ? [".exe", ".cmd", ""] : [""];
   for (const name of candidates) {
     for (const dir of dirs) {
-      for (const ext of exts) {
-        const full = path.join(dir, name + ext);
-        try { fs.accessSync(full, fs.constants.X_OK); return full; } catch { /* keep looking */ }
-      }
+      const full = path.join(dir, name);
+      try { fs.accessSync(full, fs.constants.X_OK); return full; } catch { /* keep looking */ }
     }
   }
   return null;
@@ -42,14 +37,9 @@ function findOnPath(candidates: string[]): string | null {
 
 /**
  * Resolve the shell binary and the argument prefix needed to pass a command
- * string to it (i.e. -c for POSIX shells, /C for cmd, -Command for pwsh).
+ * string to it (i.e. -c for POSIX shells).
  */
 function resolveShell(): { bin: string; prefix: string[] } {
-  if (IS_WINDOWS) {
-    const pwsh = findOnPath(["pwsh", "pwsh.exe"]);
-    if (pwsh) return { bin: pwsh, prefix: ["-NoProfile", "-Command"] };
-    return { bin: "cmd.exe", prefix: ["/C"] };
-  }
   const bash = findOnPath(["bash"]);
   if (bash) return { bin: bash, prefix: ["-c"] };
   return { bin: "/bin/sh", prefix: ["-c"] };
@@ -79,11 +69,10 @@ function runCommand(command: string): Promise<BashResult> {
     const { bin, prefix } = resolveShell();
 
     const child = spawn(bin, [...prefix, command], {
-      cwd:         process.cwd(),
-      env:         process.env as Record<string, string>,
-      stdio:       ["ignore", "pipe", "pipe"],
-      shell:       false,
-      windowsHide: true,
+      cwd:   process.cwd(),
+      env:   process.env as Record<string, string>,
+      stdio: ["ignore", "pipe", "pipe"],
+      shell: false,
     });
 
     let stdout = "";
@@ -95,7 +84,7 @@ function runCommand(command: string): Promise<BashResult> {
     let timedOut = false;
     const timer = setTimeout(() => {
       timedOut = true;
-      child.kill(IS_WINDOWS ? undefined : "SIGKILL");
+      child.kill("SIGKILL");
     }, TIMEOUT_MS);
 
     child.on("close", (code) => {
@@ -125,7 +114,7 @@ const BashToolInput = z.object({
   command: z
     .string()
     .min(1, "command must not be empty")
-    .describe("Bash command to run in container"),
+    .describe("Bash command to run"),
 
   description: z
     .string()
@@ -146,7 +135,7 @@ Exact replica of the bash_tool built into Claude.
 
 Parameters:
   - command     (string, required) : The shell command to run.
-                                     ${IS_WINDOWS ? "Uses PowerShell Core (pwsh) if available, otherwise falls back to cmd.exe." : "Uses bash if available, otherwise falls back to /bin/sh."}
+                                     Uses bash if available, otherwise falls back to /bin/sh.
   - description (string, required) : Plain-English reason for running the command
                                      (used for logging/auditing, not executed).
 
@@ -161,7 +150,8 @@ Notes:
   - Timeout: ${TIMEOUT_MS / 1000} seconds (matching Claude's built-in limit)
   - Output is truncated at ${MAX_OUT_CHARS.toLocaleString()} chars per stream
   - All environment variables of the MCP server process are inherited
-  - Commands run in the server process's working directory`,
+  - Commands run in the server process's working directory
+  - Linux and macOS only`,
 
     inputSchema: BashToolInput,
 

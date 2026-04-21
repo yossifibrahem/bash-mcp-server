@@ -1,7 +1,7 @@
 {
   "name": "bash-mcp-server",
   "version": "1.0.0",
-  "description": "MCP server exposing a cross-platform bash/shell execution tool",
+  "description": "MCP server exposing a bash shell execution tool for Linux and macOS",
   "main": "dist/index.js",
   "bin": {
     "bash-mcp-server": "dist/index.js"

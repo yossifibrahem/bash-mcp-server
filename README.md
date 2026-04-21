@@ -1,10 +1,10 @@
 # bash-mcp-server
 
-A cross-platform MCP (Model Context Protocol) server that exposes shell command execution to any MCP-compatible AI client (Claude Desktop, Claude Code, Cursor, etc.).
+An MCP (Model Context Protocol) server that exposes bash shell command execution to any MCP-compatible AI client (Claude Desktop, Claude Code, Cursor, etc.).
 
 An exact replica of the `bash_tool` built into Claude — same tool name, same parameters, same output format.
 
-Works on **Linux**, **macOS**, and **Windows**.
+Supports **Linux** and **macOS** only.
 
 ---
 
@@ -28,19 +28,19 @@ Run a shell command and get back its stdout, stderr, and exit code.
 }
 ```
 
-**Platform behaviour:**
+**Shell resolution:**
 
 | OS | Default shell | Fallback |
 |---|---|---|
-| Linux | `/bin/bash` | `/bin/sh` |
-| macOS | `/bin/bash` | `/bin/sh` |
-| Windows | `pwsh.exe` (PowerShell Core) | `cmd.exe` |
+| Linux | `bash` (from PATH) | `/bin/sh` |
+| macOS | `bash` (from PATH) | `/bin/sh` |
 
 ---
 
 ## Requirements
 
-- **Node.js 18+** — works on any OS
+- **Node.js 18+**
+- **Linux or macOS** — the server will exit immediately if run on Windows
 
 ---
 
@@ -62,7 +62,6 @@ Add to your MCP client config. The path to `node` and the server's `dist/index.j
 
 ### Claude Desktop (`claude_desktop_config.json`)
 
-**Linux / macOS:**
 ```json
 {
   "mcpServers": {
@@ -74,22 +73,9 @@ Add to your MCP client config. The path to `node` and the server's `dist/index.j
 }
 ```
 
-**Windows:**
-```json
-{
-  "mcpServers": {
-    "bash": {
-      "command": "node.exe",
-      "args": ["C:\\absolute\\path\\to\\bash-mcp-server\\dist\\index.js"]
-    }
-  }
-}
-```
-
 Config file locations:
 - **macOS**: `~/Library/Application Support/Claude/claude_desktop_config.json`
 - **Linux**: `~/.config/Claude/claude_desktop_config.json`
-- **Windows**: `%APPDATA%\Claude\claude_desktop_config.json`
 
 ### Claude Code (`~/.claude.json`)
 ```json
