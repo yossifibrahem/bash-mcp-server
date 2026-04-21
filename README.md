@@ -4,8 +4,9 @@ An MCP (Model Context Protocol) server that exposes bash shell command execution
 
 An exact replica of the `bash_tool` built into Claude — same tool name, same parameters, same output format.
 
+*The Windows equivalent is [powershell-mcp-server](https://github.com/yossifibrahem/powershell-mcp-server) — same tool contract, same parameters, same output format.*
+
 Supports **Linux** and **macOS** only.
-The Windows equivalent is [powershell-mcp-server](https://github.com/yossifibrahem/powershell-mcp-server) — same tool contract, same parameters, same output format.
 ---
 
 ## Tools
