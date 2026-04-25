@@ -21,6 +21,16 @@ import * as path from "path";
 import * as fs from "fs";
 import { z } from "zod";
 
+// ─── Working directory ────────────────────────────────────────────────────────
+
+/**
+ * Default CWD for all commands: a "wd" folder inside the server's root
+ * directory (one level up from the compiled dist/ output).
+ * Created automatically on startup if it doesn't exist.
+ */
+const DEFAULT_CWD  = path.resolve(__dirname, "..", "wd");
+fs.mkdirSync(DEFAULT_CWD, { recursive: true });
+
 // ─── Shell resolver ───────────────────────────────────────────────────────────
 
 /** Locate a binary by searching PATH — avoids a shell round-trip. */
@@ -69,7 +79,7 @@ function runCommand(command: string): Promise<BashResult> {
     const { bin, prefix } = resolveShell();
 
     const child = spawn(bin, [...prefix, command], {
-      cwd:   process.cwd(),
+      cwd:   DEFAULT_CWD,
       env:   process.env as Record<string, string>,
       stdio: ["ignore", "pipe", "pipe"],
       shell: false,
@@ -150,7 +160,7 @@ Notes:
   - Timeout: ${TIMEOUT_MS / 1000} seconds (matching Claude's built-in limit)
   - Output is truncated at ${MAX_OUT_CHARS.toLocaleString()} chars per stream
   - All environment variables of the MCP server process are inherited
-  - Commands run in the server process's working directory
+  - Commands run in the server's "wd/" working directory.
   - Linux and macOS only`,
 
     inputSchema: BashToolInput,
