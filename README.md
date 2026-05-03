@@ -7,6 +7,7 @@ An exact replica of the `bash_tool` built into Claude — same tool name, same p
 *The Windows equivalent is [powershell-mcp-server](https://github.com/yossifibrahem/powershell-mcp-server) — same tool contract, same parameters, same output format.*
 
 Supports **Linux** and **macOS** only.
+
 ---
 
 ## Tools
@@ -61,8 +62,41 @@ npm install
 
 Add to your MCP client config. The path to `node` and the server's `dist/index.js` must be absolute.
 
+### Working Directory
+
+Set `WORKING_DIR` in the `env` block to control which directory every command runs in. Supports `~` expansion.
+
+**Default:** `~/.wd` (created automatically on first launch).
+
+**Behaviour:**
+- **Relative paths in commands** (e.g. `cat src/main.ts`) resolve relative to `WORKING_DIR`
+- `~` is expanded to the home directory of the user running the server process
+- Absolute paths in commands are unaffected
+
 ### Claude Desktop (`claude_desktop_config.json`)
 
+```json
+{
+  "mcpServers": {
+    "bash": {
+      "command": "node",
+      "args": ["/absolute/path/to/bash-mcp-server/dist/index.js"],
+      "env": {
+        "WORKING_DIR": "/home/alice/my-project"
+      }
+    }
+  }
+}
+```
+
+With tilde expansion:
+```json
+"env": {
+  "WORKING_DIR": "~/projects/my-app"
+}
+```
+
+Without `WORKING_DIR` (falls back to `~/.wd`):
 ```json
 {
   "mcpServers": {
@@ -85,7 +119,10 @@ Config file locations:
     "bash": {
       "command": "node",
       "args": ["/absolute/path/to/bash-mcp-server/dist/index.js"],
-      "type": "stdio"
+      "type": "stdio",
+      "env": {
+        "WORKING_DIR": "~/projects/my-app"
+      }
     }
   }
 }

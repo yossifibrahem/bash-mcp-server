@@ -24,11 +24,43 @@ import { z } from "zod";
 // ─── Working directory ────────────────────────────────────────────────────────
 
 /**
- * Default CWD for every command.  We use ~/.wd so commands always land in a
- * predictable, user-owned directory, and to avoid cluttering the repo if this server is run from a codebase.
+ * Resolve the CWD for every spawned command.
+ *
+ * Priority (first match wins):
+ *   1. WORKING_DIR env var  — set this in mcp.json / claude_desktop_config.json
+ *   2. ~/.wd fallback       — a predictable, user-owned directory
+ *
+ * Supports ~ expansion.
  */
-const DEFAULT_CWD = path.join(os.homedir(), ".wd");
-fs.mkdirSync(DEFAULT_CWD, { recursive: true });
+function resolveWorkingDir(): string | undefined {
+  const raw = process.env.WORKING_DIR;
+  if (!raw) return undefined;
+
+  const resolved =
+    raw === "~" || raw.startsWith("~/")
+      ? path.join(os.homedir(), raw.slice(1))
+      : path.resolve(raw);
+
+  if (!fs.existsSync(resolved)) {
+    process.stderr.write(
+      `bash-mcp-server: WORKING_DIR does not exist: ${resolved}\n` +
+      `  (original value: ${raw})\n` +
+      `  Create the directory first, or unset WORKING_DIR to leave cwd unset.\n`
+    );
+    process.exit(1);
+  }
+
+  if (!fs.statSync(resolved).isDirectory()) {
+    process.stderr.write(
+      `bash-mcp-server: WORKING_DIR is not a directory: ${resolved}\n`
+    );
+    process.exit(1);
+  }
+
+  return resolved;
+}
+
+const DEFAULT_CWD = resolveWorkingDir();
 
 // ─── Shell resolver ───────────────────────────────────────────────────────────
 
@@ -159,7 +191,7 @@ Notes:
   - Timeout: ${TIMEOUT_MS / 1000} seconds (matching Claude's built-in limit)
   - Output is truncated at ${MAX_OUT_CHARS.toLocaleString()} chars per stream
   - All environment variables of the MCP server process are inherited
-  - Commands run in ~/.wd (created automatically on first launch)
+  - Commands run in WORKING_DIR if set, otherwise the MCP client's cwd
   - Linux and macOS only`,
 
     inputSchema: BashToolInput,
@@ -187,7 +219,7 @@ Notes:
 async function main(): Promise<void> {
   const transport = new StdioServerTransport();
   await server.connect(transport);
-  process.stderr.write("bash-mcp-server ready (stdio)\n");
+  process.stderr.write(`bash-mcp-server ready (stdio${DEFAULT_CWD ? `, cwd: ${DEFAULT_CWD}` : ""})\n`);
 }
 
 main().catch((err) => {
