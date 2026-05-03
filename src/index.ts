@@ -31,6 +31,7 @@ import { z } from "zod";
  *   2. ~/.wd fallback       — a predictable, user-owned directory
  *
  * Supports ~ expansion.
+ * If the resolved directory does not exist it is created automatically.
  */
 function resolveWorkingDir(): string | undefined {
   const raw = process.env.WORKING_DIR;
@@ -42,12 +43,20 @@ function resolveWorkingDir(): string | undefined {
       : path.resolve(raw);
 
   if (!fs.existsSync(resolved)) {
-    process.stderr.write(
-      `bash-mcp-server: WORKING_DIR does not exist: ${resolved}\n` +
-      `  (original value: ${raw})\n` +
-      `  Create the directory first, or unset WORKING_DIR to leave cwd unset.\n`
-    );
-    process.exit(1);
+    try {
+      fs.mkdirSync(resolved, { recursive: true });
+      process.stderr.write(
+        `bash-mcp-server: created WORKING_DIR: ${resolved}\n`
+      );
+    } catch (err) {
+      const message = err instanceof Error ? err.message : String(err);
+      process.stderr.write(
+        `bash-mcp-server: could not create WORKING_DIR: ${resolved}\n` +
+        `  (original value: ${raw})\n` +
+        `  ${message}\n`
+      );
+      process.exit(1);
+    }
   }
 
   if (!fs.statSync(resolved).isDirectory()) {
