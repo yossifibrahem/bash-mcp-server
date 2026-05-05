@@ -49,11 +49,10 @@ Run a shell command and get back its stdout, stderr, and exit code.
 ## Installation
 
 ```bash
-unzip bash-mcp-server.zip
-cd bash-mcp-server
+unzip bash-mcp-server-main.zip
+cd bash-mcp-server-main
 npm install
-# dist/ is already compiled — no build step needed
-# (or rebuild anytime with: npm run build)
+npm run build   # compiles TypeScript → dist/
 ```
 
 ---
@@ -66,12 +65,13 @@ Add to your MCP client config. The path to `node` and the server's `dist/index.j
 
 Set `WORKING_DIR` in the `env` block to control which directory every command runs in. Supports `~` expansion.
 
-**Default:** `~/.wd` (created automatically on first launch).
+**Default:** the MCP client's working directory (inherited via `process.cwd()`). This can be unpredictable — always set `WORKING_DIR` explicitly for reproducible behaviour.
 
 **Behaviour:**
 - **Relative paths in commands** (e.g. `cat src/main.ts`) resolve relative to `WORKING_DIR`
 - `~` is expanded to the home directory of the user running the server process
 - Absolute paths in commands are unaffected
+- If `WORKING_DIR` does not exist, it is created automatically on first launch
 
 ### Claude Desktop (`claude_desktop_config.json`)
 
@@ -80,7 +80,7 @@ Set `WORKING_DIR` in the `env` block to control which directory every command ru
   "mcpServers": {
     "bash": {
       "command": "node",
-      "args": ["/absolute/path/to/bash-mcp-server/dist/index.js"],
+      "args": ["/absolute/path/to/bash-mcp-server-main/dist/index.js"],
       "env": {
         "WORKING_DIR": "/home/alice/my-project"
       }
@@ -96,13 +96,13 @@ With tilde expansion:
 }
 ```
 
-Without `WORKING_DIR` (falls back to `~/.wd`):
+Without `WORKING_DIR` (falls back to the client's `process.cwd()`):
 ```json
 {
   "mcpServers": {
     "bash": {
       "command": "node",
-      "args": ["/absolute/path/to/bash-mcp-server/dist/index.js"]
+      "args": ["/absolute/path/to/bash-mcp-server-main/dist/index.js"]
     }
   }
 }
@@ -118,7 +118,7 @@ Config file locations:
   "mcpServers": {
     "bash": {
       "command": "node",
-      "args": ["/absolute/path/to/bash-mcp-server/dist/index.js"],
+      "args": ["/absolute/path/to/bash-mcp-server-main/dist/index.js"],
       "type": "stdio",
       "env": {
         "WORKING_DIR": "~/projects/my-app"
